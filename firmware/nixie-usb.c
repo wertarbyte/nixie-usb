@@ -6,7 +6,9 @@
 #include "usbdrv.h"
 #include "requests.h" /* custom requests used */
 
-static uint8_t nixie_val = 6;
+#define N_NIXIES 1
+
+static uint8_t nixie_val[N_NIXIES] = {0};
 
 PROGMEM char usbHidReportDescriptor[22] = {    /* USB report descriptor */
 	0x06, 0x00, 0xff,              // USAGE_PAGE (Generic Desktop)
@@ -43,7 +45,9 @@ usbMsgLen_t usbFunctionSetup(uchar data[8]) {
 
 uchar usbFunctionWrite(uchar *data, uchar len) {
 	if (len > 1) {
-		nixie_val = data[0];
+		if (data[0] < N_NIXIES) {
+			nixie_val[data[0]] = data[1];
+		}
 	}
 	return 1;
 }
@@ -61,7 +65,6 @@ static void set_nixie(uint8_t v) {
 
 int main(void) {
 	DDRB |= (1<<PB0 | 1<<PB1 | 1<<PB2 | 1<<PB3);
-	//DDRD |= (1<<PD2 | 1<<PD3);
 	wdt_enable(WDTO_1S);
 
 	/* prepare USB */
@@ -77,15 +80,13 @@ int main(void) {
 
 	sei();
 
-	uint16_t cnt = 0;
+	uint8_t m_tube = 0;
 	while(1) {
-		set_nixie(nixie_val);
+		set_nixie(nixie_val[m_tube]);
+		m_tube = (m_tube+1) % N_NIXIES;
+
 		wdt_reset();
 		usbPoll();
-		if (cnt++ > 50000) {
-			nixie_val = (nixie_val+1)%10;
-			cnt = 0;
-		}
 	}
 	return 0;
 }
