@@ -46,15 +46,15 @@ int main(int argc, char *argv[]) {
 
 	argc--;
 	argv++;
-	uint8_t buf[3];
 	while (argc) {
-		uint8_t tube = 0;
-		uint8_t value = 0;
+		unsigned int tube = 0;
+		unsigned int value = 0;
 		if (sscanf(argv[0], "%u:%u", &tube, &value) == 2) {
 			printf("Setting nixie %u tube to %u.\n", tube, value);
+			uint8_t buf[3];
 			buf[0] = CUSTOM_RQ_CONST_TUBE;
-			buf[1] = tube;
-			buf[2] = value;
+			buf[1] = (uint8_t) tube;
+			buf[2] = (uint8_t) value;
 			int8_t sent = usb_control_msg(handle,
 					USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT,
 					CUSTOM_RQ_SET_NIXIE,
