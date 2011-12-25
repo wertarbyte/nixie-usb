@@ -9,6 +9,7 @@
 #define N_NIXIES 1
 
 static uint8_t nixie_val[N_NIXIES] = {0};
+static uint8_t led_val[N_NIXIES][3] = { {255,0,0} };
 
 PROGMEM char usbHidReportDescriptor[22] = {    /* USB report descriptor */
 	0x06, 0x00, 0xff,              // USAGE_PAGE (Generic Desktop)
@@ -48,6 +49,11 @@ uchar usbFunctionWrite(uchar *data, uchar len) {
 		if (data[0] == CUSTOM_RQ_CONST_TUBE && data[1] < N_NIXIES) {
 			nixie_val[data[1]] = data[2];
 		}
+		if (data[0] == CUSTOM_RQ_CONST_LED && data[1] < N_NIXIES && len >=5) {
+			led_val[data[1]][0] = data[2];
+			led_val[data[1]][1] = data[3];
+			led_val[data[1]][2] = data[4];
+		}
 	}
 	return 1;
 }
@@ -63,8 +69,26 @@ static void set_nixie(uint8_t v) {
 	PORTB = (PORTB & ~mask) | (val & mask);
 }
 
+static void set_led(uint8_t c[3], uint8_t count) {
+	if (count > c[0] || c[0] == 0)
+		PORTD &= ~(1<<PD4);
+	else
+		PORTD |= 1<<PD4;
+	if (count > c[1] || c[1] == 0)
+		PORTD &= ~(1<<PD1);
+	else
+		PORTD |= 1<<PD1;
+	if (count > c[2] || c[2] == 0)
+		PORTD &= ~(1<<PD0);
+	else
+		PORTD |= 1<<PD0;
+}
+
 int main(void) {
 	DDRB |= (1<<PB0 | 1<<PB1 | 1<<PB2 | 1<<PB3);
+	/* LED */
+	DDRD |= (1<<PD5 | 1<<PD4 | 1<<PD1 | 1<<PD0 );
+
 	wdt_enable(WDTO_1S);
 
 	/* prepare USB */
@@ -80,13 +104,18 @@ int main(void) {
 
 	sei();
 
+	uint8_t pwm_count = 0;
 	uint8_t m_tube = 0;
 	while(1) {
+		PORTD &= ~(1<<PD5);
+		set_led(led_val[m_tube], pwm_count);
 		set_nixie(nixie_val[m_tube]);
 		m_tube = (m_tube+1) % N_NIXIES;
 
 		wdt_reset();
 		usbPoll();
+
+		pwm_count = (pwm_count == UINT8_MAX) ? 0 : pwm_count+1;
 	}
 	return 0;
 }

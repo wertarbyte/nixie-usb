@@ -8,5 +8,6 @@
 
 #define CUSTOM_RQ_SET_NIXIE 3
 #define CUSTOM_RQ_CONST_TUBE 0
+#define CUSTOM_RQ_CONST_LED 1
 
 #endif /* __REQUESTS_H_INCLUDED__ */
