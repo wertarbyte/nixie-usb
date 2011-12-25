@@ -1,5 +1,5 @@
 nixie: nixie.c
-	$(CC) -lusb -o $@ $^
+	$(CC) -lusb -lreadline -o $@ $^
 
 clean:
 	rm nixie

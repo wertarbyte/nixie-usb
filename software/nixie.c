@@ -7,9 +7,13 @@
 #include <stdio.h>
 #include <stdint.h>
 
+#include <readline/readline.h>
+#include <readline/history.h>
+
 #include <usb.h>
 #include "../firmware/requests.h"
 #include "../firmware/usbconfig.h"
+
 
 uint8_t open_usb(usb_dev_handle **handle) {
 	uint16_t vid = 0x16c0;
@@ -68,6 +72,18 @@ static int set_led(usb_dev_handle *handle, uint8_t led, uint8_t r, uint8_t g, ui
 	return send_buffer(handle, buf, sizeof(buf));
 }
 
+static int process_command(usb_dev_handle *handle, char *cmd);
+
+static int read_cmds(usb_dev_handle *handle, uint8_t autoquit) {
+	char *l = NULL;
+	while (l = readline("> ")) {
+		int r = process_command(handle, l);
+		free(l);
+		if (r != 0 && autoquit) return r;
+	}
+	return 0;
+}
+
 static int process_command(usb_dev_handle *handle, char *cmd) {
 	int tube = 0;
 	int value = 0;
@@ -80,10 +96,14 @@ static int process_command(usb_dev_handle *handle, char *cmd) {
 	} else if (sscanf(cmd, "l%d:%d/%d/%d", &tube, &r, &g, &b) == 4 && tube >= 0) {
 		printf("Setting nixie LED %u to %u/%u/%u.\n", tube, r, g, b);
 		return set_led(handle, tube, r, g, b);
+	} else if (strcmp(cmd, "read") == 0) {
+		printf("Reading commands from stdin...\n");
+		read_cmds(handle, 0);
 	} else {
 		fprintf(stderr, "Unable to parse command: %s.\n", cmd);
 		return 2;
 	}
+	return 0;
 
 }
 
