@@ -63,15 +63,18 @@ int main(int argc, char *argv[]) {
 					100);
 			if (sent < sizeof(buf)) {
 				fprintf(stderr, "Unable to send to USB nixie\n");
+				usb_close(handle);
 				return 1;
 			}
 
 		} else {
 			fprintf(stderr, "Unable to parse command line item: %s.\n", argv[0]);
+			usb_close(handle);
 			return 1;
 		}
 		argc--;
 		argv++;
 	}
+	usb_close(handle);
 	return 0;
 }
