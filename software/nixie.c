@@ -68,6 +68,25 @@ static int set_led(usb_dev_handle *handle, uint8_t led, uint8_t r, uint8_t g, ui
 	return send_buffer(handle, buf, sizeof(buf));
 }
 
+static int process_command(usb_dev_handle *handle, char *cmd) {
+	int tube = 0;
+	int value = 0;
+	int r = 0;
+	int g = 0;
+	int b = 0;
+	if (sscanf(cmd, "t%d:%d", &tube, &value) == 2 && tube >= 0 && value >= 0) {
+		printf("Setting nixie tube %u to %u.\n", tube, value);
+		return set_tube(handle, tube, value);
+	} else if (sscanf(cmd, "l%d:%d/%d/%d", &tube, &r, &g, &b) == 4 && tube >= 0) {
+		printf("Setting nixie LED %u to %u/%u/%u.\n", tube, r, g, b);
+		return set_led(handle, tube, r, g, b);
+	} else {
+		fprintf(stderr, "Unable to parse command: %s.\n", cmd);
+		return 2;
+	}
+
+}
+
 int main(int argc, char *argv[]) {
 	usb_dev_handle *handle = NULL;
 	int usb_present = open_usb(&handle);
@@ -79,29 +98,12 @@ int main(int argc, char *argv[]) {
 	argc--;
 	argv++;
 	while (argc) {
-		int tube = 0;
-		int value = 0;
-		int r = 0;
-		int g = 0;
-		int b = 0;
-		if (sscanf(argv[0], "t%d:%d", &tube, &value) == 2 && tube >= 0 && value >= 0) {
-			printf("Setting nixie tube %u to %u.\n", tube, value);
-			if (set_tube(handle, tube, value)) {
-				fprintf(stderr, "Unable to send to USB nixie\n");
-				usb_close(handle);
-				return 1;
-			}
-		} else if (sscanf(argv[0], "l%d:%d/%d/%d", &tube, &r, &g, &b) == 4 && tube >= 0) {
-			printf("Setting nixie LED %u to %u/%u/%u.\n", tube, r, g, b);
-			if (set_led(handle, tube, r, g, b)) {
-				fprintf(stderr, "Unable to send to USB nixie\n");
-				usb_close(handle);
-				return 1;
-			}
-		} else {
-			fprintf(stderr, "Unable to parse command line item: %s.\n", argv[0]);
+		int result = process_command(handle, argv[0]);
+		if (result == 1) {
 			usb_close(handle);
 			return 1;
+		} else if (result == 2) {
+			fprintf(stderr, "Unable to parse command line item: %s\n", argv[0]);
 		}
 		argc--;
 		argv++;
