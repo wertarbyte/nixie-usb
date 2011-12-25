@@ -44,9 +44,9 @@ usbMsgLen_t usbFunctionSetup(uchar data[8]) {
 }
 
 uchar usbFunctionWrite(uchar *data, uchar len) {
-	if (len > 1) {
-		if (data[0] < N_NIXIES) {
-			nixie_val[data[0]] = data[1];
+	if (len > 2) {
+		if (data[0] == CUSTOM_RQ_CONST_TUBE && data[1] < N_NIXIES) {
+			nixie_val[data[1]] = data[2];
 		}
 	}
 	return 1;

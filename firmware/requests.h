@@ -7,5 +7,6 @@
 #define __REQUESTS_H_INCLUDED__
 
 #define CUSTOM_RQ_SET_NIXIE 3
+#define CUSTOM_RQ_CONST_TUBE 0
 
 #endif /* __REQUESTS_H_INCLUDED__ */
