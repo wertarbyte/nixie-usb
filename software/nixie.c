@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
 		int tube = 0;
 		int value = 0;
 		if (sscanf(argv[0], "%d:%d", &tube, &value) == 2 && tube >= 0 && value >= 0) {
-			printf("Setting nixie %u tube to %u.\n", tube, value);
+			printf("Setting nixie tube %u to %u.\n", tube, value);
 			uint8_t buf[3];
 			buf[0] = CUSTOM_RQ_CONST_TUBE;
 			buf[1] = (uint8_t) tube;
