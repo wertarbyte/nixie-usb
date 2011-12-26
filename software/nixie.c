@@ -99,6 +99,9 @@ static int process_command(usb_dev_handle *handle, char *cmd) {
 	} else if (strcmp(cmd, "read") == 0) {
 		printf("Reading commands from stdin...\n");
 		read_cmds(handle, 0);
+	} else if (strcmp(cmd, "readf") == 0) {
+		printf("Reading commands from stdin (autofail)...\n");
+		read_cmds(handle, 1);
 	} else {
 		fprintf(stderr, "Unable to parse command: %s.\n", cmd);
 		return 2;
