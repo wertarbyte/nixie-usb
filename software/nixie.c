@@ -43,12 +43,17 @@ uint8_t open_usb(usb_dev_handle **handle) {
 }
 
 static int send_buffer(usb_dev_handle *handle, uint8_t *buf, uint8_t l) {
-	int8_t sent = usb_control_msg(handle,
+	uint8_t retry = 10;
+	int8_t sent = -1;
+	do {
+		sent = usb_control_msg(handle,
 			USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT,
 			CUSTOM_RQ_SET_NIXIE,
 			0, 0,
 			buf, l,
-			5000);
+			100);
+	} while (sent < l && retry-- && (usleep(5000) == 0));
+
 	if (sent < l) {
 		perror("Error sending command");
 		return 1;
