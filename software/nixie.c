@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
+#include <errno.h>
 
 #include <readline/readline.h>
 #include <readline/history.h>
@@ -33,6 +34,7 @@ uint8_t open_usb(usb_dev_handle **handle) {
 		}
 	}
 	if (target != NULL) {
+		usb_claim_interface(target, 0);
 		*handle = target;
 		return 1;
 	} else {
@@ -46,9 +48,9 @@ static int send_buffer(usb_dev_handle *handle, uint8_t *buf, uint8_t l) {
 			CUSTOM_RQ_SET_NIXIE,
 			0, 0,
 			buf, l,
-			100);
+			5000);
 	if (sent < l) {
-		fprintf(stderr, "Unable to send to USB nixie\n");
+		perror("Error sending command");
 		return 1;
 	}
 	return 0;
@@ -103,7 +105,7 @@ static int process_command(usb_dev_handle *handle, char *cmd) {
 		printf("Reading commands from stdin (autofail)...\n");
 		read_cmds(handle, 1);
 	} else {
-		fprintf(stderr, "Unable to parse command: %s.\n", cmd);
+		fprintf(stderr, "Unable to parse command: %s\n", cmd);
 		return 2;
 	}
 	return 0;
@@ -114,7 +116,7 @@ int main(int argc, char *argv[]) {
 	usb_dev_handle *handle = NULL;
 	int usb_present = open_usb(&handle);
 	if (!handle) {
-		fprintf(stderr, "Unable to open usb device.\n");
+		perror("Unable to open usb device");
 		return 1;
 	}
 
