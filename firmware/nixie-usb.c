@@ -15,6 +15,19 @@ static volatile uint8_t nixie_set[N_NIXIES] = {0};
 
 static uint8_t led_val[N_NIXIES][3] = { {0,255,128} };
 
+/* order of the layered electrodes */
+static const uint8_t nixie_level[10] = {
+	1,
+	2,
+	6,
+	7,
+	5,
+	0,
+	4,
+	8,
+	3
+};
+
 static uint8_t animation_style = CUSTOM_RQ_CONST_ANIMATION_NONE;
 static uint8_t animation_speed = 10;
 
@@ -87,8 +100,18 @@ static void set_led(uint8_t c[3], uint8_t count) {
 		PORTD |= 1<<PD0;
 }
 
+static uint8_t get_level(uint8_t v) {
+	uint8_t l = 0;
+	for (l = 0; l<10; l++) {
+		if (nixie_level[l] == v) return l;
+	}
+	return 0;
+}
+
 static void animate(void) {
 	uint8_t i = 0;
+	uint8_t cl = 0;
+	uint8_t tl = 0;
 	for (i = 0; i<N_NIXIES; i++) {
 		switch (animation_style) {
 			case CUSTOM_RQ_CONST_ANIMATION_STEP:
@@ -96,6 +119,16 @@ static void animate(void) {
 					nixie_val[i]--;
 				} else if (nixie_val[i]  < nixie_set[i]) {
 					nixie_val[i]++;
+				}
+				break;
+			case CUSTOM_RQ_CONST_ANIMATION_LEVEL:
+				cl = get_level(nixie_val[i]);
+				tl = get_level(nixie_set[i]);
+				if (cl > tl) {
+					/* move down a level */
+					nixie_val[i] = nixie_level[cl-1];
+				} else if (cl < tl) {
+					nixie_val[i] = nixie_level[cl+1];
 				}
 				break;
 			case CUSTOM_RQ_CONST_ANIMATION_NONE:
