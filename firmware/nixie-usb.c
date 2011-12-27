@@ -24,6 +24,7 @@ static const uint8_t nixie_level[10] = {
 	5,
 	0,
 	4,
+	9,
 	8,
 	3
 };
