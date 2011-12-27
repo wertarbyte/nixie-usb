@@ -2,11 +2,12 @@
 #include <avr/interrupt.h>
 #include <util/delay.h>
 #include <avr/wdt.h>
+#include <string.h>
 
 #include "usbdrv.h"
 #include "requests.h" /* custom requests used */
 
-#define N_NIXIES 1
+#define N_NIXIES 2
 
 /* these are the values currently being displayed */
 static uint8_t nixie_val[N_NIXIES] = {0};
@@ -70,9 +71,7 @@ uchar usbFunctionWrite(uchar *data, uchar len) {
 #endif
 		}
 		if (data[0] == CUSTOM_RQ_CONST_LED && data[1] < N_NIXIES && len >=5) {
-			led_val[data[1]][0] = data[2];
-			led_val[data[1]][1] = data[3];
-			led_val[data[1]][2] = data[4];
+			memcpy(led_val[data[1]], &data[2], 3);
 		}
 #if SUPPORT_ANIMATION
 		if (data[0] == CUSTOM_RQ_CONST_ANIMATION && len >= 4) {
@@ -98,15 +97,15 @@ static void set_nixie(uint8_t v) {
 }
 
 static void set_led(uint8_t c[3], uint8_t count) {
-	if (count > c[0] || c[0] == 0)
+	if (count >= c[0])
 		PORTD &= ~(1<<PD4);
 	else
 		PORTD |= 1<<PD4;
-	if (count > c[1] || c[1] == 0)
+	if (count >= c[1])
 		PORTD &= ~(1<<PD1);
 	else
 		PORTD |= 1<<PD1;
-	if (count > c[2] || c[2] == 0)
+	if (count >= c[2])
 		PORTD &= ~(1<<PD0);
 	else
 		PORTD |= 1<<PD0;
@@ -114,11 +113,9 @@ static void set_led(uint8_t c[3], uint8_t count) {
 
 #if SUPPORT_ANIMATION
 static uint8_t get_level(uint8_t v) {
-	uint8_t l = 0;
-	for (l = 0; l<10; l++) {
-		if (nixie_level[l] == v) return l;
-	}
-	return 0;
+	uint8_t l = sizeof(nixie_level);
+	while (--l && nixie_level[l] != v) {}
+	return l;
 }
 
 static void animate(void) {
@@ -154,15 +151,23 @@ static void animate(void) {
 #endif
 
 int main(void) {
-	DDRB |= (1<<PB0 | 1<<PB1 | 1<<PB2 | 1<<PB3);
-	/* LED */
-	DDRD |= (1<<PD5 | 1<<PD4 | 1<<PD1 | 1<<PD0 );
+	DDRB = (
+		/* BCD */
+		1<<PB0 | 1<<PB1 | 1<<PB2 | 1<<PB3 |
+		/* Multiplexing */
+		1<<PB7 | 1<<PB6
+	);
+	DDRD = (
+		/* LED */
+		1<<PD4 | 1<<PD1 | 1<<PD0
+	);
+
 
 #if SUPPORT_ANIMATION
 	/* configure timer for 100 Hz */
 	TCCR1B = ( 1<<WGM12 | 1<<CS10 );
 	OCR1A = 0x7D00;
-	TIMSK |= (1 << OCIE1A);
+	TIMSK = (1 << OCIE1A);
 #endif
 
 	wdt_enable(WDTO_1S);
@@ -182,8 +187,16 @@ int main(void) {
 
 	uint8_t pwm_count = 0;
 	uint8_t m_tube = 0;
+
+	PORTB |= 1<<PB7;
 	while(1) {
-		PORTD &= ~(1<<PD5);
+#if N_NIXIES == 2
+		/* invert the multiplexing ports */
+		PINB = (1<<PB7 | 1<<PB6);
+#else
+		/* add some generic multiplexing code here... */
+#endif
+
 		set_led(led_val[m_tube], pwm_count);
 		set_nixie(nixie_val[m_tube]);
 		m_tube = (m_tube+1) % N_NIXIES;
@@ -191,7 +204,7 @@ int main(void) {
 		wdt_reset();
 		usbPoll();
 
-		pwm_count = (pwm_count == UINT8_MAX) ? 0 : pwm_count+1;
+		pwm_count = (pwm_count == UINT8_MAX) ? 1 : pwm_count+1;
 
 #if SUPPORT_ANIMATION
 		if (time_passed) {

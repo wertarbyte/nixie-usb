@@ -3,7 +3,7 @@ F_CPU   = 16000000
 AVRDUDE = avrdude -p $(DEVICE)
 TARGET = nixie-usb
 
-CFLAGS  = -Iusbdrv -I. -DDEBUG_LEVEL=0
+CFLAGS  = -Iusbdrv -I. -DDEBUG_LEVEL=0 -DSUPPORT_ANIMATION
 OBJECTS = usbdrv/usbdrv.o usbdrv/usbdrvasm.o usbdrv/oddebug.o $(TARGET).o
 
 COMPILE = avr-gcc -Wall -Os -DF_CPU=$(F_CPU) $(CFLAGS) -mmcu=$(DEVICE)
