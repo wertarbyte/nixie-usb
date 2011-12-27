@@ -42,14 +42,14 @@ uint8_t open_usb(usb_dev_handle **handle) {
 	}
 }
 
-static int send_buffer(usb_dev_handle *handle, uint8_t *buf, uint8_t l) {
+static int send_usb_msg(usb_dev_handle *handle, uint8_t req, uint16_t i, uint16_t v, uint8_t *buf, uint8_t l) {
 	uint8_t retry = 10;
 	int8_t sent = -1;
 	do {
 		sent = usb_control_msg(handle,
 			USB_TYPE_VENDOR | USB_RECIP_DEVICE | USB_ENDPOINT_OUT,
-			CUSTOM_RQ_SET_NIXIE,
-			0, 0,
+			req,
+			i, v,
 			buf, l,
 			100);
 	} while (sent < l && retry-- && (usleep(5000) == 0));
@@ -59,6 +59,10 @@ static int send_buffer(usb_dev_handle *handle, uint8_t *buf, uint8_t l) {
 		return 1;
 	}
 	return 0;
+}
+
+static int send_buffer(usb_dev_handle *handle, uint8_t *buf, uint8_t l) {
+	return send_usb_msg(handle, CUSTOM_RQ_SET_NIXIE, 0, 0, buf, l);
 }
 
 static int set_tube(usb_dev_handle *handle, uint8_t tube, uint8_t value) {
@@ -79,6 +83,15 @@ static int set_led(usb_dev_handle *handle, uint8_t led, uint8_t r, uint8_t g, ui
 	return send_buffer(handle, buf, sizeof(buf));
 }
 
+static int set_animation(usb_dev_handle *handle, uint8_t style, uint8_t speed) {
+	uint8_t buf[4];
+	buf[0] = CUSTOM_RQ_CONST_ANIMATION;
+	buf[1] = (uint8_t) 0; /* not used yet */
+	buf[2] = (uint8_t) style;
+	buf[3] = (uint8_t) speed;
+	return send_buffer(handle, buf, sizeof(buf));
+}
+
 static int process_command(usb_dev_handle *handle, char *cmd);
 
 static int read_cmds(usb_dev_handle *handle, uint8_t autoquit) {
@@ -94,6 +107,8 @@ static int read_cmds(usb_dev_handle *handle, uint8_t autoquit) {
 static int process_command(usb_dev_handle *handle, char *cmd) {
 	int tube = 0;
 	int value = 0;
+	int anim = 0;
+	int speed = 0;
 	int r = 0;
 	int g = 0;
 	int b = 0;
@@ -103,6 +118,9 @@ static int process_command(usb_dev_handle *handle, char *cmd) {
 	} else if (sscanf(cmd, "l%d:%d/%d/%d", &tube, &r, &g, &b) == 4 && tube >= 0) {
 		printf("Setting nixie LED %u to %u/%u/%u.\n", tube, r, g, b);
 		return set_led(handle, tube, r, g, b);
+	} else if (sscanf(cmd, "anim:%d:%d", &anim, &speed) == 2 && anim >= 0 && anim >= 0) {
+		printf("Setting animation style %u with speed %u.\n", anim, speed);
+		return set_animation(handle, anim, speed);
 	} else if (strcmp(cmd, "read") == 0) {
 		printf("Reading commands from stdin...\n");
 		read_cmds(handle, 0);
