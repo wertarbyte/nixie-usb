@@ -10,10 +10,10 @@
 
 /* these are the values currently being displayed */
 static uint8_t nixie_val[N_NIXIES] = {0};
+
+#if SUPPORT_ANIMATION
 /* the values that are actually to be displayed in the end */
 static volatile uint8_t nixie_set[N_NIXIES] = {0};
-
-static uint8_t led_val[N_NIXIES][3] = { {0,255,128} };
 
 /* order of the layered electrodes */
 static const uint8_t nixie_level[10] = {
@@ -31,6 +31,11 @@ static const uint8_t nixie_level[10] = {
 
 static uint8_t animation_style = CUSTOM_RQ_CONST_ANIMATION_NONE;
 static uint8_t animation_speed = 10;
+#endif
+
+static uint8_t led_val[N_NIXIES][3] = {
+	{0,255,128}
+};
 
 /* enough time has passed to show the next animation phase */
 static volatile uint8_t time_passed = 0;
@@ -58,19 +63,25 @@ usbMsgLen_t usbFunctionSetup(uchar data[8]) {
 uchar usbFunctionWrite(uchar *data, uchar len) {
 	if (len > 2) {
 		if (data[0] == CUSTOM_RQ_CONST_TUBE && data[1] < N_NIXIES) {
+#if SUPPORT_ANIMATION
 			nixie_set[data[1]] = data[2];
+#else
+			nixie_val[data[1]] = data[2];
+#endif
 		}
 		if (data[0] == CUSTOM_RQ_CONST_LED && data[1] < N_NIXIES && len >=5) {
 			led_val[data[1]][0] = data[2];
 			led_val[data[1]][1] = data[3];
 			led_val[data[1]][2] = data[4];
 		}
+#if SUPPORT_ANIMATION
 		if (data[0] == CUSTOM_RQ_CONST_ANIMATION && len >= 4) {
 			animation_style = data[2];
 			if (data[3] > 0) {
 				animation_speed = data[3];
 			}
 		}
+#endif
 	}
 	return 1;
 }
@@ -101,6 +112,7 @@ static void set_led(uint8_t c[3], uint8_t count) {
 		PORTD |= 1<<PD0;
 }
 
+#if SUPPORT_ANIMATION
 static uint8_t get_level(uint8_t v) {
 	uint8_t l = 0;
 	for (l = 0; l<10; l++) {
@@ -139,16 +151,19 @@ static void animate(void) {
 		}
 	}
 }
+#endif
 
 int main(void) {
 	DDRB |= (1<<PB0 | 1<<PB1 | 1<<PB2 | 1<<PB3);
 	/* LED */
 	DDRD |= (1<<PD5 | 1<<PD4 | 1<<PD1 | 1<<PD0 );
 
+#if SUPPORT_ANIMATION
 	/* configure timer for 100 Hz */
 	TCCR1B = ( 1<<WGM12 | 1<<CS10 );
 	OCR1A = 0x7D00;
 	TIMSK |= (1 << OCIE1A);
+#endif
 
 	wdt_enable(WDTO_1S);
 
@@ -178,14 +193,17 @@ int main(void) {
 
 		pwm_count = (pwm_count == UINT8_MAX) ? 0 : pwm_count+1;
 
+#if SUPPORT_ANIMATION
 		if (time_passed) {
 			animate();
 			time_passed = 0;
 		}
+#endif
 	}
 	return 0;
 }
 
+#if SUPPORT_ANIMATION
 ISR(TIMER1_COMPA_vect) {
 	static uint8_t count = 0;
 	if (count++ >= animation_speed) {
@@ -193,3 +211,4 @@ ISR(TIMER1_COMPA_vect) {
 		count = 0;
 	}
 }
+#endif
