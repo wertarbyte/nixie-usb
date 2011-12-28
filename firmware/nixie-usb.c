@@ -37,8 +37,11 @@ static uint8_t animation_speed = 10;
 
 static uint8_t led_val[N_NIXIES][3] = { {0,0,0} };
 
+/* enough time has passed to switch to the next tube */
+static volatile uint8_t time_passed = 1;
+
 /* enough time has passed to show the next animation phase */
-static volatile uint8_t time_passed = 0;
+static volatile uint8_t animation_step = 0;
 
 void usbEventResetReady(void) {
 }
@@ -162,12 +165,10 @@ int main(void) {
 	);
 
 
-#if SUPPORT_ANIMATION
 	/* configure timer for 100 Hz */
-	TCCR1B = ( 1<<WGM12 | 1<<CS10 );
-	OCR1A = 0x7D00;
+	TCCR1B = ( 1<<WGM12 | 1<<CS11 );
+	OCR1A = 0x4E20;
 	TIMSK = (1 << OCIE1A);
-#endif
 
 	wdt_enable(WDTO_1S);
 
@@ -186,17 +187,28 @@ int main(void) {
 
 	uint8_t pwm_count = 0;
 
-	PORTB |= 1<<PB7;
+	uint8_t m_tube = 0;
 	while(1) {
 #if N_NIXIES == 2
 		/* invert the multiplexing ports */
-		PINB = (1<<PB7 | 1<<PB6);
+		if (time_passed) {
+			m_tube = 1-m_tube;
+
+			if (m_tube == 0) {
+				PORTB |= 1<<PB6;
+				set_nixie(nixie_val[m_tube]);
+				PORTB &= ~(1<<PB7);
+			} else {
+				PORTB |= 1<<PB7;
+				set_nixie(nixie_val[m_tube]);
+				PORTB &= ~(1<<PB6);
+			}
+			time_passed = 0;
+		}
 #else
 		/* add some generic multiplexing code here... */
 #endif
-		uint8_t m_tube = pwm_count % N_NIXIES;
 		set_led(led_val[m_tube], pwm_count);
-		set_nixie(nixie_val[m_tube]);
 
 		wdt_reset();
 		usbPoll();
@@ -204,21 +216,22 @@ int main(void) {
 		pwm_count = (pwm_count == UINT8_MAX) ? 2 : pwm_count+1;
 
 #if SUPPORT_ANIMATION
-		if (time_passed) {
+		if (animation_step) {
 			animate();
-			time_passed = 0;
+			animation_step = 0;
 		}
 #endif
 	}
 	return 0;
 }
 
-#if SUPPORT_ANIMATION
 ISR(TIMER1_COMPA_vect) {
+#if SUPPORT_ANIMATION
 	static uint8_t count = 0;
 	if (count++ >= animation_speed) {
-		time_passed = 1;
+		animation_step = 1;
 		count = 0;
 	}
-}
 #endif
+	time_passed = 1;
+}
