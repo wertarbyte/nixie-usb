@@ -201,7 +201,7 @@ int main(void) {
 		wdt_reset();
 		usbPoll();
 
-		pwm_count = (pwm_count == UINT8_MAX) ? 1 : pwm_count+1;
+		pwm_count = (pwm_count == UINT8_MAX) ? 2 : pwm_count+1;
 
 #if SUPPORT_ANIMATION
 		if (time_passed) {
