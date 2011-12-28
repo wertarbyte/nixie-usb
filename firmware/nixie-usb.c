@@ -14,7 +14,7 @@ static uint8_t nixie_val[N_NIXIES] = {0};
 
 #if SUPPORT_ANIMATION
 /* the values that are actually to be displayed in the end */
-static volatile uint8_t nixie_set[N_NIXIES] = {0};
+static uint8_t nixie_set[N_NIXIES] = {0};
 
 /* order of the layered electrodes */
 static const uint8_t nixie_level[10] = {
@@ -34,9 +34,7 @@ static uint8_t animation_style = CUSTOM_RQ_CONST_ANIMATION_NONE;
 static uint8_t animation_speed = 10;
 #endif
 
-static uint8_t led_val[N_NIXIES][3] = {
-	{0,255,128}
-};
+static uint8_t led_val[N_NIXIES][3] = { {0,0,0} };
 
 /* enough time has passed to show the next animation phase */
 static volatile uint8_t time_passed = 0;
@@ -93,7 +91,7 @@ static void set_nixie(uint8_t v) {
 	if (v & 1<<2) val |= 1<<PB0; // C
 	if (v & 1<<3) val |= 1<<PB2; // D
 
-	PORTB = (PORTB & ~mask) | (val & mask);
+	PORTB = (PORTB & ~mask) | val;
 }
 
 static void set_led(uint8_t c[3], uint8_t count) {
@@ -186,7 +184,6 @@ int main(void) {
 	sei();
 
 	uint8_t pwm_count = 0;
-	uint8_t m_tube = 0;
 
 	PORTB |= 1<<PB7;
 	while(1) {
@@ -196,10 +193,9 @@ int main(void) {
 #else
 		/* add some generic multiplexing code here... */
 #endif
-
+		uint8_t m_tube = pwm_count % N_NIXIES;
 		set_led(led_val[m_tube], pwm_count);
 		set_nixie(nixie_val[m_tube]);
-		m_tube = (m_tube+1) % N_NIXIES;
 
 		wdt_reset();
 		usbPoll();
