@@ -17,7 +17,8 @@ static uint8_t nixie_val[N_NIXIES] = {0};
 static uint8_t nixie_set[N_NIXIES] = {0};
 
 /* order of the layered electrodes */
-static const uint8_t nixie_level[10] = {
+static const uint8_t nixie_level[10+1] = {
+	10, // OFF!
 	1,
 	2,
 	6,
