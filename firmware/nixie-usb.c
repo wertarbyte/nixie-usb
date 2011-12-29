@@ -31,8 +31,8 @@ static const uint8_t nixie_level[10+1] = {
 	3
 };
 
-static uint8_t animation_style = CUSTOM_RQ_CONST_ANIMATION_NONE;
-static uint8_t animation_speed = 10;
+static uint8_t animation_style = CUSTOM_RQ_CONST_ANIMATION_LEVEL;
+static uint8_t animation_speed = 4;
 #endif
 
 static uint8_t led_val[N_NIXIES][3] = { {0,0,0} };
