@@ -7,7 +7,7 @@
 #include "usbdrv.h"
 #include "requests.h" /* custom requests used */
 
-#define N_NIXIES 2
+#define N_NIXIES 3
 
 /* these are the values currently being displayed */
 static uint8_t nixie_val[N_NIXIES] = {0};
@@ -32,7 +32,7 @@ static const uint8_t nixie_level[10+1] = {
 };
 
 static uint8_t animation_style = CUSTOM_RQ_CONST_ANIMATION_LEVEL;
-static uint8_t animation_speed = 4;
+static uint8_t animation_speed = 8;
 #endif
 
 static uint8_t led_val[N_NIXIES][3] = { {0,0,0} };
@@ -157,7 +157,7 @@ int main(void) {
 		/* BCD */
 		1<<PB0 | 1<<PB1 | 1<<PB2 | 1<<PB3 |
 		/* Multiplexing */
-		1<<PB7 | 1<<PB6
+		1<<PB7 | 1<<PB6 | 1<<PB5
 	);
 	DDRD = (
 		/* LED */
@@ -167,7 +167,7 @@ int main(void) {
 
 	/* configure timer for 100 Hz */
 	TCCR1B = ( 1<<WGM12 | 1<<CS11 );
-	OCR1A = 0x4E20;
+	OCR1A = 0x2710;
 	TIMSK = (1 << OCIE1A);
 
 	wdt_enable(WDTO_1S);
@@ -189,9 +189,8 @@ int main(void) {
 
 	uint8_t m_tube = 0;
 	while(1) {
-#if N_NIXIES == 2
-		/* invert the multiplexing ports */
 		if (time_passed) {
+#if N_NIXIES == 2
 			m_tube = 1-m_tube;
 
 			if (m_tube == 0) {
@@ -199,15 +198,30 @@ int main(void) {
 				set_nixie(nixie_val[m_tube]);
 				PORTB &= ~(1<<PB7);
 			} else {
-				PORTB |= 1<<PB7;
 				set_nixie(nixie_val[m_tube]);
 				PORTB &= ~(1<<PB6);
 			}
 			time_passed = 0;
-		}
+#elif N_NIXIES == 3
+			m_tube = (m_tube < (N_NIXIES-1)) ? m_tube+1 : 0;
+			PORTB |= (1<<PB7 | 1<<PB6 | 1<<PB5);
+			set_nixie(nixie_val[m_tube]);
+			switch(m_tube) {
+				case 0:
+					PORTB &= ~(1<<PB7);
+					break;
+				case 1:
+					PORTB &= ~(1<<PB6);
+					break;
+				case 2:
+					PORTB &= ~(1<<PB5);
+					break;
+			}
+			time_passed = 0;
 #else
 		/* add some generic multiplexing code here... */
 #endif
+		}
 		set_led(led_val[m_tube], pwm_count);
 
 		wdt_reset();
