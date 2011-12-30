@@ -92,6 +92,18 @@ static int set_animation(usb_dev_handle *handle, uint8_t style, uint8_t speed) {
 	return send_buffer(handle, buf, sizeof(buf));
 }
 
+static int set_number(usb_dev_handle *handle, int number) {
+	int i = 0;
+	while (number || i < 3) { /* handle at least 3 tube until we have a reset function */
+		uint8_t v = number % 10;
+		int r = set_tube(handle, i, v);
+		number /= 10;
+		if (r) return r;
+		i++;
+	}
+	return 0;
+}
+
 static int process_command(usb_dev_handle *handle, char *cmd);
 
 static int read_cmds(usb_dev_handle *handle, uint8_t autoquit) {
@@ -121,6 +133,9 @@ static int process_command(usb_dev_handle *handle, char *cmd) {
 	} else if (sscanf(cmd, "anim:%d:%d", &anim, &speed) == 2 && anim >= 0 && anim >= 0) {
 		printf("Setting animation style %u with speed %u.\n", anim, speed);
 		return set_animation(handle, anim, speed);
+	} else if (sscanf(cmd, "num:%d", &value) == 1 && value >= 0) {
+		printf("Setting number %u\n", value);
+		return set_number(handle, value);
 	} else if (strcmp(cmd, "read") == 0) {
 		printf("Reading commands from stdin...\n");
 		read_cmds(handle, 0);
