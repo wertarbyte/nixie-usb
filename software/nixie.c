@@ -16,6 +16,8 @@
 #include "../firmware/usbconfig.h"
 
 
+#define MAX_DIGITS 3
+
 uint8_t open_usb(usb_dev_handle **handle) {
 	uint16_t vid = 0x16c0;
 	uint16_t pid = 0x05df;
@@ -94,12 +96,21 @@ static int set_animation(usb_dev_handle *handle, uint8_t style, uint8_t speed) {
 
 static int set_number(usb_dev_handle *handle, int number) {
 	int i = 0;
-	while (number || i < 3) { /* handle at least 3 tube until we have a reset function */
+	while (number || i < MAX_DIGITS) { /* handle at least MAX_DIGITS tubes until we have a reset function */
 		uint8_t v = number % 10;
 		int r = set_tube(handle, i, v);
 		number /= 10;
 		if (r) return r;
 		i++;
+	}
+	return 0;
+}
+
+static int set_color(usb_dev_handle *handle, uint8_t r, uint8_t g, uint8_t b) {
+	int i = 0;
+	while (i < MAX_DIGITS) { /* handle at least MAX_DIGITS tubes until we have a reset function */
+		int res = set_led(handle, i++, r, g, b);
+		if (res) return res;
 	}
 	return 0;
 }
@@ -136,6 +147,9 @@ static int process_command(usb_dev_handle *handle, char *cmd) {
 	} else if (sscanf(cmd, "num:%d", &value) == 1 && value >= 0) {
 		printf("Setting number %u\n", value);
 		return set_number(handle, value);
+	} else if (sscanf(cmd, "color:%d/%d/%d", &r, &g, &b) == 3) {
+		printf("Setting color %u/%u/%u\n", r, g, b);
+		return set_color(handle, r, g, b);
 	} else if (strcmp(cmd, "read") == 0) {
 		printf("Reading commands from stdin...\n");
 		read_cmds(handle, 0);
