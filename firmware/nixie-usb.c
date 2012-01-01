@@ -43,6 +43,7 @@ static uint8_t animation_speed = 8;
 #endif
 
 static uint8_t led_val[N_NIXIES][3] = { {0,0,0} };
+static uint8_t led_pwm[N_NIXIES] = {0};
 
 /* enough time has passed to switch to the next tube */
 static volatile uint8_t time_passed = 1;
@@ -180,8 +181,6 @@ int main(void) {
 
 	sei();
 
-	uint8_t pwm_count = 0;
-
 	uint8_t m_tube = 0;
 	while(1) {
 		if (time_passed) {
@@ -217,12 +216,11 @@ int main(void) {
 		/* add some generic multiplexing code here... */
 #endif
 		}
-		set_led(led_val[m_tube], pwm_count);
+		set_led(led_val[m_tube], led_pwm[m_tube]);
+		led_pwm[m_tube] = (led_pwm[m_tube] == UINT8_MAX) ? 0 : led_pwm[m_tube]+1;
 
 		wdt_reset();
 		USB_USBTask();
-
-		pwm_count = (pwm_count == UINT8_MAX) ? 2 : pwm_count+1;
 
 #if SUPPORT_ANIMATION
 		if (animation_step) {
