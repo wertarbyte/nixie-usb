@@ -13,14 +13,13 @@
 
 #include <usb.h>
 #include "../firmware/requests.h"
-#include "../firmware/usbconfig.h"
 
 
 #define MAX_DIGITS 3
 
 uint8_t open_usb(usb_dev_handle **handle) {
-	uint16_t vid = 0x16c0;
-	uint16_t pid = 0x05df;
+	uint16_t vid = 0x04b4;
+	uint16_t pid = 0xfd11;
 	struct usb_bus *bus;
 	struct usb_device *dev;
 	usb_dev_handle *target = NULL;
@@ -68,7 +67,7 @@ static int send_buffer(usb_dev_handle *handle, uint8_t *buf, uint8_t l) {
 }
 
 static int set_tube(usb_dev_handle *handle, uint8_t tube, uint8_t value) {
-	uint8_t buf[3];
+	uint8_t buf[8];
 	buf[0] = CUSTOM_RQ_CONST_TUBE;
 	buf[1] = (uint8_t) tube;
 	buf[2] = (uint8_t) value;
@@ -76,7 +75,7 @@ static int set_tube(usb_dev_handle *handle, uint8_t tube, uint8_t value) {
 }
 
 static int set_led(usb_dev_handle *handle, uint8_t led, uint8_t r, uint8_t g, uint8_t b) {
-	uint8_t buf[5];
+	uint8_t buf[8];
 	buf[0] = CUSTOM_RQ_CONST_LED;
 	buf[1] = (uint8_t) led;
 	buf[2] = (uint8_t) r;
@@ -86,7 +85,7 @@ static int set_led(usb_dev_handle *handle, uint8_t led, uint8_t r, uint8_t g, ui
 }
 
 static int set_animation(usb_dev_handle *handle, uint8_t style, uint8_t speed) {
-	uint8_t buf[4];
+	uint8_t buf[8];
 	buf[0] = CUSTOM_RQ_CONST_ANIMATION;
 	buf[1] = (uint8_t) 0; /* not used yet */
 	buf[2] = (uint8_t) style;

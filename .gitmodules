@@ -1,0 +1,3 @@
+[submodule "firmware/LUFA"]
+	path = firmware/LUFA
+	url = git://github.com/wertarbyte/LUFA.git

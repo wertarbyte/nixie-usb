@@ -2,12 +2,19 @@
 #include <avr/interrupt.h>
 #include <util/delay.h>
 #include <avr/wdt.h>
+#include <avr/power.h>
 #include <string.h>
 
-#include "usbdrv.h"
+#include <LUFA/Version.h>
+#include <LUFA/Drivers/USB/USB.h>
+
 #include "requests.h" /* custom requests used */
 
 #define N_NIXIES 3
+
+#ifndef SUPPORT_ANIMATION
+#define SUPPORT_ANIMATION 1
+#endif
 
 /* these are the values currently being displayed */
 static uint8_t nixie_val[N_NIXIES] = {0};
@@ -43,27 +50,7 @@ static volatile uint8_t time_passed = 1;
 /* enough time has passed to show the next animation phase */
 static volatile uint8_t animation_step = 0;
 
-void usbEventResetReady(void) {
-}
-
-usbMsgLen_t usbFunctionSetup(uchar data[8]) {
-	usbRequest_t    *rq = (usbRequest_t *)data;
-
-	if((rq->bmRequestType & USBRQ_TYPE_MASK) == USBRQ_TYPE_VENDOR) {
-		switch(rq->bRequest) {
-			case CUSTOM_RQ_SET_NIXIE:
-				return USB_NO_MSG;
-		}
-	} else {
-		/* calls requests USBRQ_HID_GET_REPORT and USBRQ_HID_SET_REPORT are
-		* not implemented since we never call them. The operating system
-		* won't call them either because our descriptor defines no meaning.
-		*/
-	}
-	return 0;   /* default for not implemented requests: return no data back to host */
-}
-
-uchar usbFunctionWrite(uchar *data, uchar len) {
+static uint8_t process_usb_data(uint8_t *data, uint8_t len) {
 	if (len > 2) {
 		if (data[0] == CUSTOM_RQ_CONST_TUBE && data[1] < N_NIXIES) {
 #if SUPPORT_ANIMATION
@@ -152,6 +139,21 @@ static void animate(void) {
 }
 #endif
 
+void EVENT_USB_Device_ControlRequest(void) {
+	uint8_t buf[8];
+	if (USB_ControlRequest.bmRequestType == (REQDIR_HOSTTODEVICE | REQTYPE_VENDOR | REQREC_DEVICE)) {
+		switch (USB_ControlRequest.bRequest) {
+			case CUSTOM_RQ_SET_NIXIE:
+				Endpoint_ClearSETUP();
+				Endpoint_Read_Control_Stream_LE(&buf, sizeof(buf));
+				Endpoint_ClearOUT();
+				while (!(Endpoint_IsINReady()));
+				Endpoint_ClearIN();
+				process_usb_data(buf, sizeof(buf));
+		}
+	}
+}
+
 int main(void) {
 	DDRB = (
 		/* BCD */
@@ -163,25 +165,18 @@ int main(void) {
 		/* LED */
 		1<<PD4 | 1<<PD1 | 1<<PD0
 	);
+	clock_prescale_set(clock_div_1);
 
-
-	/* configure timer for 100 Hz */
+	/* configure timer for 200 Hz */
 	TCCR1B = ( 1<<WGM12 | 1<<CS11 );
 	OCR1A = 0x2710;
-	TIMSK = (1 << OCIE1A);
+	TIMSK1 = (1 << OCIE1A);
 
 	wdt_enable(WDTO_1S);
+	clock_prescale_set(clock_div_1);
 
 	/* prepare USB */
-	usbInit();
-	usbDeviceDisconnect();
-	/* fake USB disconnect for >250ms */
-	uint8_t i = 255;
-	while (i--) {
-		wdt_reset();
-		_delay_ms(1);
-	}
-	usbDeviceConnect();
+	USB_Init();
 
 	sei();
 
@@ -225,7 +220,7 @@ int main(void) {
 		set_led(led_val[m_tube], pwm_count);
 
 		wdt_reset();
-		usbPoll();
+		USB_USBTask();
 
 		pwm_count = (pwm_count == UINT8_MAX) ? 2 : pwm_count+1;
 
