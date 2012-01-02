@@ -22,6 +22,8 @@ static uint8_t nixie_val[N_NIXIES] = {0};
 #if SUPPORT_ANIMATION
 /* the values that are actually to be displayed in the end */
 static uint8_t nixie_set[N_NIXIES] = {0};
+/* when using sequential animation, this is the tube currently being changed */
+static uint8_t animated_tube = 0;
 
 /* order of the layered electrodes */
 static const uint8_t nixie_level[10+1] = {
@@ -121,6 +123,12 @@ static void animate(void) {
 					nixie_val[i]++;
 				}
 				break;
+			case CUSTOM_RQ_CONST_ANIMATION_LEVEL_SEQ:
+				if (i != animated_tube) {
+					break;
+				} else if (nixie_val[i] == nixie_set[i]) {
+					animated_tube = (animated_tube == N_NIXIES-1) ? 0 : animated_tube+1;
+				}
 			case CUSTOM_RQ_CONST_ANIMATION_LEVEL:
 				cl = get_level(nixie_val[i]);
 				tl = get_level(nixie_set[i]);
