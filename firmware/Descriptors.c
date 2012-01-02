@@ -37,6 +37,8 @@
  */
 
 #include "Descriptors.h"
+#include "requests.h"
+
 
 /** Device descriptor structure. This descriptor, located in FLASH memory, describes the overall
  *  device characteristics, including the supported USB version, control endpoint size and the
@@ -54,8 +56,8 @@ const USB_Descriptor_Device_t PROGMEM RelayBoard_DeviceDescriptor =
 
 	.Endpoint0Size          = FIXED_CONTROL_ENDPOINT_SIZE,
 
-	.VendorID               = 0x04B4,
-	.ProductID              = 0xFD11,
+	.VendorID               = USB_VID,
+	.ProductID              = USB_PID,
 	.ReleaseNumber          = VERSION_BCD(02.00),
 
 	.ManufacturerStrIndex   = 0x01,
@@ -121,7 +123,7 @@ const USB_Descriptor_String_t PROGMEM RelayBoard_LanguageString =
  */
 const USB_Descriptor_String_t PROGMEM RelayBoard_ManufacturerString =
 {
-	.Header                 = {.Size = USB_STRING_LEN(5), .Type = DTYPE_String},
+	.Header                 = {.Size = USB_STRING_LEN(10), .Type = DTYPE_String},
 
 	.UnicodeString          = L"Wertarbyte"
 };
@@ -132,7 +134,7 @@ const USB_Descriptor_String_t PROGMEM RelayBoard_ManufacturerString =
  */
 const USB_Descriptor_String_t PROGMEM RelayBoard_ProductString =
 {
-	.Header                 = {.Size = USB_STRING_LEN(10), .Type = DTYPE_String},
+	.Header                 = {.Size = USB_STRING_LEN(5), .Type = DTYPE_String},
 
 	.UnicodeString          = L"Nixie"
 };

@@ -6,6 +6,9 @@
 #ifndef __REQUESTS_H_INCLUDED__
 #define __REQUESTS_H_INCLUDED__
 
+#define USB_VID 0x16c0
+#define USB_PID 0x05dc
+
 #define CUSTOM_RQ_SET_NIXIE 3
 #define CUSTOM_RQ_CONST_TUBE 0
 #define CUSTOM_RQ_CONST_LED 1

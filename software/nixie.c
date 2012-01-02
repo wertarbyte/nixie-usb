@@ -18,8 +18,8 @@
 #define MAX_DIGITS 3
 
 uint8_t open_usb(usb_dev_handle **handle) {
-	uint16_t vid = 0x04b4;
-	uint16_t pid = 0xfd11;
+	uint16_t vid = USB_VID;
+	uint16_t pid = USB_PID;
 	struct usb_bus *bus;
 	struct usb_device *dev;
 	usb_dev_handle *target = NULL;
