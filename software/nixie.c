@@ -17,6 +17,8 @@
 #define V_NAME "Wertarbyte.de"
 #define P_NAME "Nixie"
 
+#define TUBE_OFF 11
+
 #define MAX_DIGITS 3
 
 uint8_t open_usb(usb_dev_handle **handle) {
@@ -111,6 +113,7 @@ static int set_number(usb_dev_handle *handle, int number) {
 	int i = 0;
 	while (number || i < MAX_DIGITS) { /* handle at least MAX_DIGITS tubes until we have a reset function */
 		uint8_t v = number % 10;
+		if (number == 0 && i != 0) v = TUBE_OFF; /* deactivate leading 0s */
 		int r = set_tube(handle, i, v);
 		number /= 10;
 		if (r) return r;
