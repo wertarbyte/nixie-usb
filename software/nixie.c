@@ -14,12 +14,16 @@
 #include <usb.h>
 #include "../firmware/requests.h"
 
+#define V_NAME "Wertarbyte.de"
+#define P_NAME "Nixie"
 
 #define MAX_DIGITS 3
 
 uint8_t open_usb(usb_dev_handle **handle) {
 	uint16_t vid = USB_VID;
 	uint16_t pid = USB_PID;
+	char vendor[256];
+	char product[256];
 	struct usb_bus *bus;
 	struct usb_device *dev;
 	usb_dev_handle *target = NULL;
@@ -31,6 +35,16 @@ uint8_t open_usb(usb_dev_handle **handle) {
 		for (dev=bus->devices; dev; dev=dev->next) {
 			if (dev->descriptor.idVendor == vid && dev->descriptor.idProduct == pid) {
 				target = usb_open(dev);
+				if (target) {
+					usb_get_string_simple(target, dev->descriptor.iManufacturer, vendor, sizeof(vendor));
+					usb_get_string_simple(target, dev->descriptor.iProduct, product, sizeof(product));
+					if (strcmp(vendor, V_NAME) == 0 && strcmp(product, P_NAME) == 0) {
+						/* we found our device */
+						break;
+					}
+				}
+				usb_close(target);
+				target = NULL;
 			}
 		}
 	}

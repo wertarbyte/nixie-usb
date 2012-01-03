@@ -123,9 +123,9 @@ const USB_Descriptor_String_t PROGMEM RelayBoard_LanguageString =
  */
 const USB_Descriptor_String_t PROGMEM RelayBoard_ManufacturerString =
 {
-	.Header                 = {.Size = USB_STRING_LEN(10), .Type = DTYPE_String},
+	.Header                 = {.Size = USB_STRING_LEN(13), .Type = DTYPE_String},
 
-	.UnicodeString          = L"Wertarbyte"
+	.UnicodeString          = L"Wertarbyte.de"
 };
 
 /** Product descriptor string. This is a Unicode string containing the product's details in human readable form,
