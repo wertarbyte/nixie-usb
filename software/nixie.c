@@ -131,6 +131,16 @@ static int set_color(usb_dev_handle *handle, uint8_t r, uint8_t g, uint8_t b) {
 	return 0;
 }
 
+static int tubes_off(usb_dev_handle *handle) {
+	int i = 0;
+	/* this should probably be done by the firmware */
+	while (i < MAX_DIGITS) { /* handle at least MAX_DIGITS tubes until we have a reset function */
+		int res = set_tube(handle, i++, TUBE_OFF);
+		if (res) return res;
+	}
+	return 0;
+}
+
 static int process_command(usb_dev_handle *handle, char *cmd);
 
 static int read_cmds(usb_dev_handle *handle, uint8_t autoquit) {
@@ -169,6 +179,9 @@ static int process_command(usb_dev_handle *handle, char *cmd) {
 	} else if (sscanf(cmd, "color:%d/%d/%d", &r, &g, &b) == 3) {
 		printf("Setting color %u/%u/%u\n", r, g, b);
 		return set_color(handle, r, g, b);
+	} else if (strcmp(cmd, "off") == 0) {
+		printf("Turning off all tubes...\n");
+		return tubes_off(handle);
 	} else if (strcmp(cmd, "read") == 0) {
 		printf("Reading commands from stdin...\n");
 		read_cmds(handle, 0);
