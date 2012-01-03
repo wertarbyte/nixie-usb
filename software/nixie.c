@@ -109,11 +109,11 @@ static int set_animation(usb_dev_handle *handle, uint8_t style, uint8_t speed) {
 	return send_buffer(handle, buf, sizeof(buf));
 }
 
-static int set_number(usb_dev_handle *handle, int number) {
+static int set_number(usb_dev_handle *handle, int number, uint8_t leading_zero) {
 	int i = 0;
 	while (number || i < MAX_DIGITS) { /* handle at least MAX_DIGITS tubes until we have a reset function */
 		uint8_t v = number % 10;
-		if (number == 0 && i != 0) v = TUBE_OFF; /* deactivate leading 0s */
+		if (!leading_zero && number == 0 && i != 0) v = TUBE_OFF; /* deactivate leading 0s */
 		int r = set_tube(handle, i, v);
 		number /= 10;
 		if (r) return r;
@@ -160,9 +160,12 @@ static int process_command(usb_dev_handle *handle, char *cmd) {
 	} else if (sscanf(cmd, "anim:%d:%d", &anim, &speed) == 2 && anim >= 0 && anim >= 0) {
 		printf("Setting animation style %u with speed %u.\n", anim, speed);
 		return set_animation(handle, anim, speed);
+	} else if (sscanf(cmd, "lnum:%d", &value) == 1 && value >= 0) {
+		printf("Setting number %u\n", value);
+		return set_number(handle, value, 1);
 	} else if (sscanf(cmd, "num:%d", &value) == 1 && value >= 0) {
 		printf("Setting number %u\n", value);
-		return set_number(handle, value);
+		return set_number(handle, value, 0);
 	} else if (sscanf(cmd, "color:%d/%d/%d", &r, &g, &b) == 3) {
 		printf("Setting color %u/%u/%u\n", r, g, b);
 		return set_color(handle, r, g, b);
