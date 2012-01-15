@@ -1,0 +1,2 @@
+# Make nixie tubes (identified by vendor and product strings) accessible to group "nixie"
+SUBSYSTEMS=="usb", ATTRS{idVendor}=="16c0", ATTRS{idProduct}=="05dc", ATTRS{product}=="Nixie", ATTRS{manufacturer}=="Wertarbyte.de", GROUP="nixie"
