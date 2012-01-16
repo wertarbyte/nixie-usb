@@ -21,16 +21,25 @@ my $volume_display = 0;
 my $track = 0;
 my $track_display = 0;
 
+my $last_state = "";
+
+sub send_state {
+	my (@cmds) = @_;
+	my $c = join("\n", @cmds, "");
+	unless ($c eq $last_state) {
+		print $c;
+		$last_state = $c;
+	}
+}
+
 sub display_volume {
 	my ($volume) = @_;
-	print "color:255/0/0\n";
-	print "lnum:$volume\n";
+	send_state "color:255/0/0", "lnum:$volume";
 }
 
 sub display_track {
 	my ($track) = @_;
-	print "color:0/255/0\n";
-	print "num:$track\n";
+	send_state "color:0/255/0", "num:$track";
 }
 
 sub display_progress {
@@ -41,11 +50,9 @@ sub display_progress {
 		my $time = $status->time;
 		my $percent = int($time->percent + 0.5);
 		my $remaining = $time->seconds_left;
-		print "color:0/255/128\n";
-		print "lnum:$remaining\n";
+		send_state "color:0/255/128", "lnum:$remaining";
 	} else {
-		print "off\n";
-		print "color:0/0/0\n";
+		send_state "off", "color:0/0/0";
 	}
 }
 
@@ -54,12 +61,12 @@ while (my $status = $mpd->status) {
 	my $n_vol = $status->volume;
 	if ($n_vol != $volume) {
 		$volume = $n_vol;
-		$volume_display = 3;
+		$volume_display = 10;
 	}
 	my $n_track = $status->song;
 	if ($n_track != $track) {
 		$track = $n_track;
-		$track_display = 3;
+		$track_display = 10;
 	}
 	if ($volume_display) {
 		display_volume($volume);
@@ -72,8 +79,7 @@ while (my $status = $mpd->status) {
 		display_progress($status);
 	}
 
-	usleep 500000;
+	usleep 250000;
 }
 
-print "off\n";
-print "color:0/0/0\n";
+send_state "off", "color:0/0/0";
